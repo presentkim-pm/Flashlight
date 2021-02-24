@@ -44,8 +44,12 @@ final class Loader extends PluginBase{
     /** @var FlashlightTask[] */
     private array $tasks = [];
 
+    private int $updateDelay = 5;
+
     /** @throws ReflectionException */
     protected function onEnable() : void{
+        $this->updateDelay = max(1, (int) ($this->getConfig()->getNested("update-delay", 0.25) * 20));
+
         $this->getServer()->getPluginManager()->registerEvent(PlayerItemHeldEvent::class, function(PlayerItemHeldEvent $event) : void{
             $this->createFlashlight($event->getPlayer(), $event->getItem());
         }, EventPriority::MONITOR, $this, false);
@@ -60,7 +64,7 @@ final class Loader extends PluginBase{
         $lightLevel = $this->getLightLevelFromItem($item);
         if($task === null || $task->getHandler() === null || $task->getHandler()->isCancelled()){
             $this->tasks[$hash] = new FlashlightTask($player, $lightLevel);
-            $this->getScheduler()->scheduleRepeatingTask($this->tasks[$hash], 2);
+            $this->getScheduler()->scheduleRepeatingTask($this->tasks[$hash], $this->updateDelay);
         }else{
             $task->setLightLevel($lightLevel);
         }

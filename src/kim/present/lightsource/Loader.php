@@ -28,9 +28,30 @@ declare(strict_types=1);
 
 namespace kim\present\lightsource;
 
+use kim\present\lightsource\task\GrowingTask;
+use pocketmine\event\Listener;
+use pocketmine\event\player\PlayerJoinEvent;
+use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 
-class Loader extends PluginBase{
+use function spl_object_hash;
+
+class Loader extends PluginBase implements Listener{
+    /** @var GrowingTask[] */
+    private array $tasks = [];
+
     public function onEnable() : void{
+        $this->getServer()->getPluginManager()->registerEvents($this, $this);
+    }
+
+    public function registerTask(Player $player) : void{
+        if(!isset($this->tasks[$hash = spl_object_hash($player)]) || $this->tasks[$hash]->getHandler()->isCancelled()){
+            $this->tasks[$hash] = new GrowingTask($this, $player);
+            $this->getScheduler()->scheduleRepeatingTask($this->tasks[$hash], 2);
+        }
+    }
+
+    public function onPlayerJoin(PlayerJoinEvent $event) : void{
+        $this->registerTask($event->getPlayer());
     }
 }

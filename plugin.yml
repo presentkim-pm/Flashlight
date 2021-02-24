@@ -1,8 +1,9 @@
 ---
-name: Template
-main: blugin\template\Loader
-version: 0.1.0
-api: [ 4.0.0 ]
-author: AuthorName
-description: Template of Pocketmine-MP plugin
+name: LightSource
+main: kim\present\lightsource\Loader
+version: 1.0.0
+api: 4.0.0
+author: PresentKim
+description: Make glowing when holding light source! (like torch)
+depend: [ ExpansionPack ]
 ...

@@ -22,36 +22,52 @@
  *
  * @noinspection PhpIllegalPsrClassPathInspection
  * @noinspection SpellCheckingInspection
+ * @noinspection PhpDocSignatureInspection
  */
 
 declare(strict_types=1);
 
 namespace kim\present\flashlight;
 
-use kim\present\flashlight\task\GrowingTask;
-use pocketmine\event\Listener;
+use kim\present\flashlight\task\FlashlightTask;
+use pocketmine\event\EventPriority;
+use pocketmine\event\player\PlayerItemHeldEvent;
 use pocketmine\event\player\PlayerJoinEvent;
+use pocketmine\item\Item;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
+use ReflectionException;
 
 use function spl_object_hash;
 
-class Loader extends PluginBase implements Listener{
-    /** @var GrowingTask[] */
+final class Loader extends PluginBase{
+    /** @var FlashlightTask[] */
     private array $tasks = [];
 
-    public function onEnable() : void{
-        $this->getServer()->getPluginManager()->registerEvents($this, $this);
+    /** @throws ReflectionException */
+    protected function onEnable() : void{
+        $this->getServer()->getPluginManager()->registerEvent(PlayerItemHeldEvent::class, function(PlayerItemHeldEvent $event) : void{
+            $this->createFlashlight($event->getPlayer(), $event->getItem());
+        }, EventPriority::MONITOR, $this, false);
+        $this->getServer()->getPluginManager()->registerEvent(PlayerJoinEvent::class, function(PlayerJoinEvent $event) : void{
+            $player = $event->getPlayer();
+            $this->createFlashlight($player, $player->getInventory()->getItemInHand());
+        }, EventPriority::MONITOR, $this, false);
     }
 
-    public function registerTask(Player $player) : void{
-        if(!isset($this->tasks[$hash = spl_object_hash($player)]) || $this->tasks[$hash]->getHandler()->isCancelled()){
-            $this->tasks[$hash] = new GrowingTask($this, $player);
+    private function createFlashlight(Player $player, Item $item) : void{
+        $task = $this->tasks[$hash = spl_object_hash($player)] ?? null;
+        $lightLevel = $this->getLightLevelFromItem($item);
+        if($task === null || $task->getHandler() === null || $task->getHandler()->isCancelled()){
+            $this->tasks[$hash] = new FlashlightTask($player, $lightLevel);
             $this->getScheduler()->scheduleRepeatingTask($this->tasks[$hash], 2);
+        }else{
+            $task->setLightLevel($lightLevel);
         }
     }
 
-    public function onPlayerJoin(PlayerJoinEvent $event) : void{
-        $this->registerTask($event->getPlayer());
+    private function getLightLevelFromItem(Item $item) : int{
+        //TODO: Direct mapping of light sources that exist only as items
+        return $item->getBlock()->getLightLevel();
     }
 }

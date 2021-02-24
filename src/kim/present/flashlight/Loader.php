@@ -26,9 +26,9 @@
 
 declare(strict_types=1);
 
-namespace kim\present\lightsource;
+namespace kim\present\flashlight;
 
-use kim\present\lightsource\task\GrowingTask;
+use kim\present\flashlight\task\GrowingTask;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\player\Player;

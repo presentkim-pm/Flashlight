@@ -27,10 +27,10 @@
 
 declare(strict_types=1);
 
-namespace kim\present\lightsource\task;
+namespace kim\present\flashlight\task;
 
 use kim\present\expansionpack\BlockIds;
-use kim\present\lightsource\Loader;
+use kim\present\flashlight\Loader;
 use pocketmine\block\Liquid;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\convert\RuntimeBlockMapping;

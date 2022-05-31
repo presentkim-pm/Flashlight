@@ -20,43 +20,42 @@
  *  ( . .) ♥
  *  c(")(")
  *
- * @noinspection PhpIllegalPsrClassPathInspection
- * @noinspection SpellCheckingInspection
- * @noinspection PhpDocSignatureInspection
+ * @noinspection PhpUnused
  */
 
 declare(strict_types=1);
 
-namespace kim\present\flashlight;
+namespace kim\present\flashlight\listener;
 
+use kim\present\flashlight\Main;
 use kim\present\flashlight\task\FlashlightTask;
-use pocketmine\event\EventPriority;
+use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerItemHeldEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\item\Item;
 use pocketmine\player\Player;
-use pocketmine\plugin\PluginBase;
-use ReflectionException;
 
 use function spl_object_hash;
 
-final class Loader extends PluginBase{
+final class EventListener implements Listener{
     /** @var FlashlightTask[] */
     private array $tasks = [];
 
-    private int $updateDelay = 5;
+    public function __construct(
+        private Main $plugin,
+        private int $updateDelay
+    ){
+    }
 
-    /** @throws ReflectionException */
-    protected function onEnable() : void{
-        $this->updateDelay = max(1, (int) ($this->getConfig()->getNested("update-delay", 0.25) * 20));
+    /** @priority MONITOR */
+    public function onPlayerItemHeld(PlayerItemHeldEvent $event) : void{
+        $this->createFlashlight($event->getPlayer(), $event->getItem());
+    }
 
-        $this->getServer()->getPluginManager()->registerEvent(PlayerItemHeldEvent::class, function(PlayerItemHeldEvent $event) : void{
-            $this->createFlashlight($event->getPlayer(), $event->getItem());
-        }, EventPriority::MONITOR, $this, false);
-        $this->getServer()->getPluginManager()->registerEvent(PlayerJoinEvent::class, function(PlayerJoinEvent $event) : void{
-            $player = $event->getPlayer();
-            $this->createFlashlight($player, $player->getInventory()->getItemInHand());
-        }, EventPriority::MONITOR, $this, false);
+    /** @priority MONITOR */
+    public function onPlayerJoin(PlayerJoinEvent $event) : void{
+        $player = $event->getPlayer();
+        $this->createFlashlight($player, $player->getInventory()->getItemInHand());
     }
 
     private function createFlashlight(Player $player, Item $item) : void{
@@ -64,7 +63,7 @@ final class Loader extends PluginBase{
         $lightLevel = $this->getLightLevelFromItem($item);
         if($task === null || $task->getHandler() === null || $task->getHandler()->isCancelled()){
             $this->tasks[$hash] = new FlashlightTask($player, $lightLevel);
-            $this->getScheduler()->scheduleRepeatingTask($this->tasks[$hash], $this->updateDelay);
+            $this->plugin->getScheduler()->scheduleRepeatingTask($this->tasks[$hash], $this->updateDelay);
         }else{
             $task->setLightLevel($lightLevel);
         }

@@ -1,6 +1,6 @@
 ---
 name: Flashlight
-main: kim\present\flashlight\Loader
+main: kim\present\flashlight\Main
 version: 1.0.0
 api: 4.0.0
 author: PresentKim

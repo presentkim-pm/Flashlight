@@ -71,29 +71,28 @@ class FlashlightTask extends Task{
 
     public function setLightLevel(int $lightLevel) : void{
         $lightLevel &= 0xf;
-        //TODO: Remove this hack. Currently, UPDATE_BLOCK is displayed at brightness 14 for an unknown reason.
-        if($lightLevel === 14){
-            $lightLevel = 15;
-        }
 
-        if($this->lightLevel === $lightLevel)
+        if($this->lightLevel === $lightLevel){
             return;
+        }
 
         $this->lightLevel = $lightLevel;
         $this->overrideBlock();
     }
 
     private function restoreBlock() : void{
-        if($this->pos === null)
+        if($this->pos === null){
             return;
+        }
 
         $normalLayer = RuntimeBlockMapping::getInstance()->toRuntimeId($this->pos->world->getBlock($this->pos)->getFullId());
         self::sendBlockLayers($this->pos, $normalLayer, self::AIR());
     }
 
     private function overrideBlock() : void{
-        if($this->pos === null)
+        if($this->pos === null){
             return;
+        }
 
         $block = $this->pos->world->getBlock($this->pos);
         $normalLayer = RuntimeBlockMapping::getInstance()->toRuntimeId($block->getFullId());
@@ -123,7 +122,7 @@ class FlashlightTask extends Task{
 
     public static function LIGHT(int $lightLevel) : int{
         static $cache = [];
-        if(!isset($cache[$lightLevel = $lightLevel & 0xf])){
+        if(!isset($cache[$lightLevel &= 0xf])){
             $cache[$lightLevel] = RuntimeBlockMapping::getInstance()->toRuntimeId(self::LIGHT_BLOCK << 4 | $lightLevel);
         }
         return $cache[$lightLevel];

@@ -1,0 +1,8 @@
+---
+branches:
+  - main
+projects:
+  FlashLight:
+    path: ""
+    icon: "assets/icon.png"
+...

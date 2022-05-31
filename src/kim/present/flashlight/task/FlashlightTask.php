@@ -29,9 +29,9 @@ declare(strict_types=1);
 
 namespace kim\present\flashlight\task;
 
-use kim\present\expansionpack\BlockIds;
 use pocketmine\block\Liquid;
 use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
+use pocketmine\network\mcpe\protocol\types\BlockPosition;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
 use pocketmine\player\Player;
 use pocketmine\scheduler\Task;
@@ -39,6 +39,8 @@ use pocketmine\Server;
 use pocketmine\world\Position;
 
 class FlashlightTask extends Task{
+    public const LIGHT_BLOCK = 470;
+
     private Player $player;
     private int $lightLevel = 0;
     private ?Position $pos = null;
@@ -50,7 +52,7 @@ class FlashlightTask extends Task{
 
     public function onRun() : void{
         if($this->player->isClosed() || !$this->player->isConnected() || $this->lightLevel <= 0){
-            $this->getHandler()->cancel();
+            $this->getHandler()?->cancel();
             return;
         }
 
@@ -104,9 +106,10 @@ class FlashlightTask extends Task{
     }
 
     private static function sendBlockLayers(Position $pos, int $normalLayer, int $liquidLayer) : void{
+        $blockPos = BlockPosition::fromVector3($pos);
         Server::getInstance()->broadcastPackets($pos->world->getViewersForPosition($pos), [
-            UpdateBlockPacket::create($pos->x, $pos->y, $pos->z, $normalLayer),
-            UpdateBlockPacket::create($pos->x, $pos->y, $pos->z, $liquidLayer, UpdateBlockPacket::DATA_LAYER_LIQUID)
+            UpdateBlockPacket::create($blockPos, $normalLayer, UpdateBlockPacket::FLAG_NETWORK, UpdateBlockPacket::DATA_LAYER_NORMAL),
+            UpdateBlockPacket::create($blockPos, $liquidLayer, UpdateBlockPacket::FLAG_NETWORK, UpdateBlockPacket::DATA_LAYER_LIQUID)
         ]);
     }
 
@@ -121,7 +124,7 @@ class FlashlightTask extends Task{
     public static function LIGHT(int $lightLevel) : int{
         static $cache = [];
         if(!isset($cache[$lightLevel = $lightLevel & 0xf])){
-            $cache[$lightLevel] = RuntimeBlockMapping::getInstance()->toRuntimeId(BlockIds::LIGHT_BLOCK << 4 | $lightLevel);
+            $cache[$lightLevel] = RuntimeBlockMapping::getInstance()->toRuntimeId(self::LIGHT_BLOCK << 4 | $lightLevel);
         }
         return $cache[$lightLevel];
     }

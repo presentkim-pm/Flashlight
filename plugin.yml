@@ -5,5 +5,4 @@ version: 1.0.0
 api: 4.0.0
 author: PresentKim
 description: Make glowing when holding light source! (like torch)
-depend: [ ExpansionPack ]
 ...

@@ -28,9 +28,18 @@
 ## About The Project
 ![Project Preview][project-preview]
 
-:heavy_check_mark: Make glowing when holding light source! (like a torch)  
-:heavy_check_mark: You can configuration the flashlight update delay in `config.yml`
+:heavy_check_mark: Make glowing when holding light source!    
+:heavy_check_mark: You can configuration the update delay in `config.yml`
 
+Just holding a glowing block like `torch`, The surroundings become brighter.
+> Primarily useful for navigating dark places with torches.
+
+-----
+
+## TODO:
+- [ ] Supports configuration modification via command
+- [ ] Supports off-hand (left hand)
+- [ ] Supports items that do not have a block
 
 -----
 

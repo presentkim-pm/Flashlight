@@ -23,6 +23,7 @@
  * @noinspection PhpIllegalPsrClassPathInspection
  * @noinspection SpellCheckingInspection
  * @noinspection PhpDocSignatureInspection
+ * @noinspection PhpInternalEntityUsedInspection
  */
 
 declare(strict_types=1);
@@ -30,15 +31,18 @@ declare(strict_types=1);
 namespace kim\present\flashlight;
 
 use kim\present\flashlight\listener\EventListener;
+use kim\present\flashlight\utils\LightBlockSupport;
 use pocketmine\plugin\PluginBase;
 
 use function max;
 
 final class Main extends PluginBase{
     protected function onEnable() : void{
+        LightBlockSupport::registerToPm($this);
+
         $this->getServer()->getPluginManager()->registerEvents(new EventListener(
             $this,
-            max(1, ($this->getConfig()->getNested("update-delay", 0.25) * 20))
+            (int) max(1, ($this->getConfig()->getNested("update-delay", 0.25) * 20))
         ), $this);
     }
 }

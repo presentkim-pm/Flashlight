@@ -61,6 +61,7 @@ class FlashlightTask extends Task{
         if($this->pos === null || !$this->pos->equals($newPos)){
             $this->restoreBlock();
             $this->pos = $newPos;
+            $this->player->sendActionBarMessage("§l§aLight Level: §r§a{$this->lightLevel}, " . self::LIGHT($this->lightLevel));
             $this->overrideBlock();
         }
     }
@@ -70,7 +71,7 @@ class FlashlightTask extends Task{
     }
 
     public function setLightLevel(int $lightLevel) : void{
-        $lightLevel &= 0xf;
+        $lightLevel = max(0, $lightLevel & 0xf - 1);
 
         if($this->lightLevel === $lightLevel){
             return;
@@ -113,18 +114,10 @@ class FlashlightTask extends Task{
     }
 
     public static function AIR() : int{
-        static $cache = null;
-        if(empty($cache)){
-            $cache = RuntimeBlockMapping::getInstance()->toRuntimeId(0);
-        }
-        return $cache;
+        return RuntimeBlockMapping::getInstance()->toRuntimeId(0);
     }
 
     public static function LIGHT(int $lightLevel) : int{
-        static $cache = [];
-        if(!isset($cache[$lightLevel &= 0xf])){
-            $cache[$lightLevel] = RuntimeBlockMapping::getInstance()->toRuntimeId(self::LIGHT_BLOCK << 4 | $lightLevel);
-        }
-        return $cache[$lightLevel];
+        return RuntimeBlockMapping::getInstance()->toRuntimeId(self::LIGHT_BLOCK << 4 | $lightLevel);
     }
 }

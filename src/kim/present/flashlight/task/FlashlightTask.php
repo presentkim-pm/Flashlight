@@ -61,7 +61,6 @@ class FlashlightTask extends Task{
         if($this->pos === null || !$this->pos->equals($newPos)){
             $this->restoreBlock();
             $this->pos = $newPos;
-            $this->player->sendActionBarMessage("§l§aLight Level: §r§a{$this->lightLevel}, " . self::LIGHT($this->lightLevel));
             $this->overrideBlock();
         }
     }

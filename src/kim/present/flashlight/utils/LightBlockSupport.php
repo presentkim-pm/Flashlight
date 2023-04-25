@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace kim\present\flashlight\utils;
 
 use Closure;
-use customiesdevs\customies\world\LegacyBlockIdToStringIdMap;
+use pocketmine\data\bedrock\LegacyBlockIdToStringIdMap;
 use pocketmine\network\mcpe\convert\GlobalItemTypeDictionary;
 use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;

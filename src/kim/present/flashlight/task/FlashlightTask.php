@@ -30,6 +30,8 @@ declare(strict_types=1);
 namespace kim\present\flashlight\task;
 
 use pocketmine\block\Liquid;
+use pocketmine\inventory\CallbackInventoryListener;
+use pocketmine\item\Item;
 use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\types\BlockPosition;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
@@ -45,14 +47,34 @@ class FlashlightTask extends Task{
     private int $lightLevel = 0;
     private ?Position $pos = null;
 
-    public function __construct(Player $player, int $lightLevel){
+    private bool $requireLightLevelUpdate = false;
+
+    public function __construct(Player $player){
         $this->player = $player;
-        $this->setLightLevel($lightLevel);
+        $this->requestLightLevelUpdate();
+
+        $inventoryListener = CallbackInventoryListener::onAnyChange(fn() => $this->requestLightLevelUpdate());
+        $player->getInventory()->getListeners()->add($inventoryListener);
+        $player->getOffHandInventory()->getListeners()->add($inventoryListener);
     }
 
     public function onRun() : void{
-        if($this->player->isClosed() || !$this->player->isConnected() || $this->lightLevel <= 0){
+        //When player was leaved from server, cancle task self.
+        if($this->player->isClosed() || !$this->player->isConnected()){
             $this->getHandler()?->cancel();
+            return;
+        }
+
+        //If light level update required, update the light level according to the player's inventory
+        if($this->requireLightLevelUpdate){
+            $this->setLightLevel(max(
+                self::getLightLevelFromItem($this->player->getInventory()->getItemInHand()),
+                self::getLightLevelFromItem($this->player->getOffHandInventory()->getItem(0))
+            ));
+            $this->requireLightLevelUpdate = false;
+        }
+
+        if($this->lightLevel <= 0){
             return;
         }
 
@@ -67,6 +89,14 @@ class FlashlightTask extends Task{
 
     public function onCancel() : void{
         $this->restoreBlock();
+    }
+
+    /**
+     * Request to recalculate light level on next 'onRun' call.
+     * Designed for reduce the overload of calculating light level for each inventory change.
+     */
+    public function requestLightLevelUpdate() : void{
+        $this->requireLightLevelUpdate = true;
     }
 
     public function setLightLevel(int $lightLevel) : void{
@@ -112,11 +142,16 @@ class FlashlightTask extends Task{
         ]);
     }
 
-    public static function AIR() : int{
+    private static function AIR() : int{
         return RuntimeBlockMapping::getInstance()->toRuntimeId(0);
     }
 
-    public static function LIGHT(int $lightLevel) : int{
+    private static function LIGHT(int $lightLevel) : int{
         return RuntimeBlockMapping::getInstance()->toRuntimeId(self::LIGHT_BLOCK << 4 | $lightLevel);
+    }
+
+    private static function getLightLevelFromItem(Item $item) : int{
+        //TODO: Direct mapping of light sources that exist only as items
+        return $item->getBlock()->getLightLevel();
     }
 }

@@ -32,13 +32,13 @@ use kim\present\flashlight\task\FlashlightTask;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerItemHeldEvent;
 use pocketmine\event\player\PlayerJoinEvent;
-use pocketmine\item\Item;
-use pocketmine\player\Player;
+use pocketmine\event\player\PlayerQuitEvent;
+use pocketmine\scheduler\TaskHandler;
 
 use function spl_object_hash;
 
 final class EventListener implements Listener{
-    /** @var FlashlightTask[] */
+    /** @var TaskHandler[] */
     private array $tasks = [];
 
     public function __construct(
@@ -49,28 +49,21 @@ final class EventListener implements Listener{
 
     /** @priority MONITOR */
     public function onPlayerItemHeld(PlayerItemHeldEvent $event) : void{
-        $this->createFlashlight($event->getPlayer(), $event->getItem());
+        /** @var FlashlightTask|null $task */
+        $task = $this->tasks[spl_object_hash($event->getPlayer())]?->getTask();
+        $task?->requestLightLevelUpdate();
     }
 
     /** @priority MONITOR */
     public function onPlayerJoin(PlayerJoinEvent $event) : void{
         $player = $event->getPlayer();
-        $this->createFlashlight($player, $player->getInventory()->getItemInHand());
+        $this->tasks[spl_object_hash($player)] = $this->plugin->getScheduler()->scheduleRepeatingTask(new FlashlightTask($player), $this->updateDelay);
     }
 
-    private function createFlashlight(Player $player, Item $item) : void{
-        $task = $this->tasks[$hash = spl_object_hash($player)] ?? null;
-        $lightLevel = $this->getLightLevelFromItem($item);
-        if($task === null || $task->getHandler() === null || $task->getHandler()->isCancelled()){
-            $this->tasks[$hash] = new FlashlightTask($player, $lightLevel);
-            $this->plugin->getScheduler()->scheduleRepeatingTask($this->tasks[$hash], $this->updateDelay);
-        }else{
-            $task->setLightLevel($lightLevel);
-        }
-    }
-
-    private function getLightLevelFromItem(Item $item) : int{
-        //TODO: Direct mapping of light sources that exist only as items
-        return $item->getBlock()->getLightLevel();
+    /** @priority MONITOR */
+    public function onPlayerQuit(PlayerQuitEvent $event) : void{
+        $player = $event->getPlayer();
+        $this->tasks[spl_object_hash($player)]?->cancel();
+        unset($this->tasks[spl_object_hash($player)]);
     }
 }

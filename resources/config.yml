@@ -5,3 +5,11 @@
 # Flashlight update delay [flot: seconds] (default: 0.25)
 # It is recommended to be as high as possible. Lower = more CPU, check more often
 update-delay: 0.25
+
+# Light level of items [int] (min: 0, max: 15)
+# It supports for set the light level of an item that is not automatically calculated (such as a lava bucket) or a custom items.
+# Item name format is same as the item name of the /give command.
+# example) lava_bucket (same as '325:10')
+item-light-levels:
+    'lava_bucket': 15
+    #'nether_star': 10

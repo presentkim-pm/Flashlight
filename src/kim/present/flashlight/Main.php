@@ -32,6 +32,10 @@ namespace kim\present\flashlight;
 
 use kim\present\flashlight\listener\EventListener;
 use kim\present\flashlight\utils\LightBlockSupport;
+use kim\present\flashlight\utils\LightLevelCalculator;
+use pocketmine\item\LegacyStringToItemParser;
+use pocketmine\item\LegacyStringToItemParserException;
+use pocketmine\item\StringToItemParser;
 use pocketmine\plugin\PluginBase;
 
 use function max;
@@ -44,5 +48,18 @@ final class Main extends PluginBase{
             $this,
             (int) max(1, ($this->getConfig()->getNested("update-delay", 0.25) * 20))
         ), $this);
+
+        $itemLightLevels = $this->getConfig()->getNested("item-light-levels", []);
+        if(is_array($itemLightLevels)){
+            foreach($itemLightLevels as $itemString => $lightLevel){
+                try{
+                    $item = StringToItemParser::getInstance()->parse($itemString) ?? LegacyStringToItemParser::getInstance()->parse($itemString);
+                    LightLevelCalculator::setLightLevel($item->getId(), $item->getMeta(), max(0, min(15, $lightLevel)));
+                }catch(LegacyStringToItemParserException $e){
+                    $this->getLogger()->error("Error when 'item-light-levels' data read...");
+                    $this->getLogger()->error("'$itemString' is invalid item name");
+                }
+            }
+        }
     }
 }

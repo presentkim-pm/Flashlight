@@ -29,9 +29,9 @@ declare(strict_types=1);
 
 namespace kim\present\flashlight\task;
 
+use kim\present\flashlight\utils\LightLevelCalculator;
 use pocketmine\block\Liquid;
 use pocketmine\inventory\CallbackInventoryListener;
-use pocketmine\item\Item;
 use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\types\BlockPosition;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
@@ -68,8 +68,8 @@ class FlashlightTask extends Task{
         //If light level update required, update the light level according to the player's inventory
         if($this->requireLightLevelUpdate){
             $this->setLightLevel(max(
-                self::getLightLevelFromItem($this->player->getInventory()->getItemInHand()),
-                self::getLightLevelFromItem($this->player->getOffHandInventory()->getItem(0))
+                LightLevelCalculator::calc($this->player->getInventory()->getItemInHand()),
+                LightLevelCalculator::calc($this->player->getOffHandInventory()->getItem(0))
             ));
             $this->requireLightLevelUpdate = false;
         }
@@ -148,10 +148,5 @@ class FlashlightTask extends Task{
 
     private static function LIGHT(int $lightLevel) : int{
         return RuntimeBlockMapping::getInstance()->toRuntimeId(self::LIGHT_BLOCK << 4 | $lightLevel);
-    }
-
-    private static function getLightLevelFromItem(Item $item) : int{
-        //TODO: Direct mapping of light sources that exist only as items
-        return $item->getBlock()->getLightLevel();
     }
 }

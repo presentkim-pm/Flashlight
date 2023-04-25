@@ -31,13 +31,13 @@ declare(strict_types=1);
 namespace kim\present\flashlight\utils;
 
 use Closure;
+use kim\present\flashlight\task\LightBlockRegisterAsyncTask;
 use pocketmine\data\bedrock\LegacyBlockIdToStringIdMap;
 use pocketmine\network\mcpe\convert\GlobalItemTypeDictionary;
 use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializerContext;
 use pocketmine\plugin\PluginBase;
-use pocketmine\scheduler\AsyncTask;
 use pocketmine\scheduler\ClosureTask;
 use pocketmine\Server;
 use pocketmine\utils\Utils;
@@ -72,15 +72,7 @@ final class LightBlockSupport{
             self::applyToRuntionBlockMapping($lightBlockRuntimeIds);
             $server = Server::getInstance();
             $server->getAsyncPool()->addWorkerStartHook(static function(int $worker) use ($server, $lightBlockRuntimeIds) : void{
-                $server->getAsyncPool()->submitTaskToWorker(new class($lightBlockRuntimeIds) extends AsyncTask{
-                    /** @param int[] $lightBlockRuntimeIds */
-                    public function __construct(private array $lightBlockRuntimeIds){
-                    }
-
-                    public function onRun() : void{
-                        LightBlockSupport::applyToRuntionBlockMapping((array) $this->lightBlockRuntimeIds);
-                    }
-                }, $worker);
+                $server->getAsyncPool()->submitTaskToWorker(new LightBlockRegisterAsyncTask($lightBlockRuntimeIds), $worker);
             });
         }), 0);
     }

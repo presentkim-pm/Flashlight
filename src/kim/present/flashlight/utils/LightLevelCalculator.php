@@ -31,7 +31,7 @@ use pocketmine\item\Item;
 
 final class LightLevelCalculator{
     /**
-     * @var array $lightLevelMap
+     * @var array                      $lightLevelMap
      * @phpstan-var array<string, int> $lightLevelMap
      */
     private static array $lightLevelMap = [];
@@ -42,11 +42,11 @@ final class LightLevelCalculator{
      * Set the lighting level for a specific ID and meta directly
      * It supports for set the light level of an item that is not automatically calculated (such as a lava bucket) or a custom items.
      */
-    public static function setLightLevel(int $id, int $meta, int $lightLevel) : void{
-        self::$lightLevelMap["$id:$meta"] = $lightLevel;
+    public static function setLightLevel(int $stateId, int $lightLevel) : void{
+        self::$lightLevelMap[$stateId] = $lightLevel;
     }
 
     public static function calc(Item $item) : int{
-        return self::$lightLevelMap["{$item->getId()}:{$item->getMeta()}"] ??= $item->getBlock()->getLightLevel();
+        return self::$lightLevelMap[$item->getStateId()] ??= $item->getBlock()->getLightLevel();
     }
 }

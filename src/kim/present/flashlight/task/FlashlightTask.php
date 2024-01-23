@@ -29,13 +29,13 @@ namespace kim\present\flashlight\task;
 
 use kim\present\flashlight\utils\LightLevelCalculator;
 use pocketmine\block\Liquid;
+use pocketmine\block\VanillaBlocks;
 use pocketmine\inventory\CallbackInventoryListener;
-use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
+use pocketmine\network\mcpe\convert\TypeConverter;
 use pocketmine\network\mcpe\protocol\types\BlockPosition;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
 use pocketmine\player\Player;
 use pocketmine\scheduler\Task;
-use pocketmine\Server;
 use pocketmine\world\Position;
 
 class FlashlightTask extends Task{
@@ -113,7 +113,8 @@ class FlashlightTask extends Task{
             return;
         }
 
-        $normalLayer = RuntimeBlockMapping::getInstance()->toRuntimeId($this->pos->world->getBlock($this->pos)->getFullId());
+        $blockTranslator = TypeConverter::getInstance()->getBlockTranslator();
+        $normalLayer = $blockTranslator->internalIdToNetworkId($this->pos->world->getBlock($this->pos)->getStateId());
         self::sendBlockLayers($this->pos, $normalLayer, self::AIR());
     }
 
@@ -123,7 +124,8 @@ class FlashlightTask extends Task{
         }
 
         $block = $this->pos->world->getBlock($this->pos);
-        $normalLayer = RuntimeBlockMapping::getInstance()->toRuntimeId($block->getFullId());
+        $blockTranslator = TypeConverter::getInstance()->getBlockTranslator();
+        $normalLayer = $blockTranslator->internalIdToNetworkId($block->getStateId());
         $liquidLayer = self::LIGHT($this->lightLevel);
         if($block instanceof Liquid){
             [$normalLayer, $liquidLayer] = [$liquidLayer, $normalLayer];
@@ -134,17 +136,17 @@ class FlashlightTask extends Task{
 
     private static function sendBlockLayers(Position $pos, int $normalLayer, int $liquidLayer) : void{
         $blockPos = BlockPosition::fromVector3($pos);
-        Server::getInstance()->broadcastPackets($pos->world->getViewersForPosition($pos), [
-            UpdateBlockPacket::create($blockPos, $normalLayer, UpdateBlockPacket::FLAG_NETWORK, UpdateBlockPacket::DATA_LAYER_NORMAL),
-            UpdateBlockPacket::create($blockPos, $liquidLayer, UpdateBlockPacket::FLAG_NETWORK, UpdateBlockPacket::DATA_LAYER_LIQUID)
-        ]);
+        $pos->world->broadcastPacketToViewers($pos, UpdateBlockPacket::create($blockPos, $normalLayer, UpdateBlockPacket::FLAG_NETWORK, UpdateBlockPacket::DATA_LAYER_NORMAL));
+        $pos->world->broadcastPacketToViewers($pos, UpdateBlockPacket::create($blockPos, $liquidLayer, UpdateBlockPacket::FLAG_NETWORK, UpdateBlockPacket::DATA_LAYER_LIQUID));
     }
 
     private static function AIR() : int{
-        return RuntimeBlockMapping::getInstance()->toRuntimeId(0);
+        $blockTranslator = TypeConverter::getInstance()->getBlockTranslator();
+        return $blockTranslator->internalIdToNetworkId(VanillaBlocks::AIR()->getStateId());
     }
 
     private static function LIGHT(int $lightLevel) : int{
-        return RuntimeBlockMapping::getInstance()->toRuntimeId(self::LIGHT_BLOCK << 4 | $lightLevel);
+        $blockTranslator = TypeConverter::getInstance()->getBlockTranslator();
+        return $blockTranslator->internalIdToNetworkId(VanillaBlocks::LIGHT()->setLightLevel($lightLevel)->getStateId());
     }
 }

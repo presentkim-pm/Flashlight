@@ -11,5 +11,5 @@ update-delay: 0.25
 # Item name format is same as the item name of the /give command.
 # example) lava_bucket (same as '325:10')
 item-light-levels:
-    'lava_bucket': 15
-    #'nether_star': 10
+  'lava_bucket': 15
+  #'nether_star': 10

@@ -48,8 +48,17 @@ final class EventListener implements Listener{
 
 	/** @priority MONITOR */
 	public function onPlayerItemHeld(PlayerItemHeldEvent $event) : void{
+		$hash = spl_object_hash($event->getPlayer());
+		/**
+		 * I thought it was impossible,
+		 * but if the PlayerJoinEvent handler given item,
+		 * it could have happened enough.
+		 */
+		if(!isset($this->tasks[$hash])){
+			return;
+		}
 		/** @var FlashlightTask|null $task */
-		$task = $this->tasks[spl_object_hash($event->getPlayer())]?->getTask();
+		$task = $this->tasks[$hash]->getTask();
 		$task?->requestLightLevelUpdate();
 	}
 

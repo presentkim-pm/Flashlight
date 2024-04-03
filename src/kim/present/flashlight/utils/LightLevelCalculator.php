@@ -12,9 +12,9 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * @author  PresentKim (debe3721@gmail.com)
- * @link    https://github.com/PresentKim
- * @license https://www.gnu.org/licenses/lgpl-3.0 LGPL-3.0 License
+ * @author       PresentKim (debe3721@gmail.com)
+ * @link         https://github.com/PresentKim
+ * @license      https://www.gnu.org/licenses/lgpl-3.0 LGPL-3.0 License
  *
  *   (\ /)
  *  ( . .) ♥
@@ -30,17 +30,19 @@ namespace kim\present\flashlight\utils;
 use pocketmine\item\Item;
 
 final class LightLevelCalculator{
+
     /**
      * @var array                      $lightLevelMap
      * @phpstan-var array<string, int> $lightLevelMap
      */
     private static array $lightLevelMap = [];
 
-    private function __construct(){ }
+    private function __construct(){}
 
     /**
      * Set the lighting level for a specific ID and meta directly
-     * It supports for set the light level of an item that is not automatically calculated (such as a lava bucket) or a custom items.
+     * It supports for set the light level of an item that is not automatically calculated (such as a lava bucket) or a
+     * custom items.
      */
     public static function setLightLevel(int $stateId, int $lightLevel) : void{
         self::$lightLevelMap[$stateId] = $lightLevel;

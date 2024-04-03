@@ -38,43 +38,44 @@ use pocketmine\scheduler\TaskHandler;
 use function spl_object_hash;
 
 final class EventListener implements Listener{
-	/** @var TaskHandler[] */
-	private array $tasks = [];
 
-	public function __construct(
-		private Main $plugin,
-		private int $updateDelay
-	){}
+    /** @var TaskHandler[] */
+    private array $tasks = [];
 
-	/** @priority MONITOR */
-	public function onPlayerItemHeld(PlayerItemHeldEvent $event) : void{
-		$hash = spl_object_hash($event->getPlayer());
-		/**
-		 * I thought it was impossible,
-		 * but if the PlayerJoinEvent handler given item,
-		 * it could have happened enough.
-		 */
-		if(!isset($this->tasks[$hash])){
-			return;
-		}
-		/** @var FlashlightTask|null $task */
-		$task = $this->tasks[$hash]->getTask();
-		$task?->requestLightLevelUpdate();
-	}
+    public function __construct(
+        private Main $plugin,
+        private int $updateDelay
+    ){}
 
-	/** @priority MONITOR */
-	public function onPlayerJoin(PlayerJoinEvent $event) : void{
-		$player = $event->getPlayer();
-		$this->tasks[spl_object_hash($player)] = $this->plugin->getScheduler()->scheduleRepeatingTask(
-			new FlashlightTask($player),
-			$this->updateDelay
-		);
-	}
+    /** @priority MONITOR */
+    public function onPlayerItemHeld(PlayerItemHeldEvent $event) : void{
+        $hash = spl_object_hash($event->getPlayer());
+        /**
+         * I thought it was impossible,
+         * but if the PlayerJoinEvent handler given item,
+         * it could have happened enough.
+         */
+        if(!isset($this->tasks[$hash])){
+            return;
+        }
+        /** @var FlashlightTask|null $task */
+        $task = $this->tasks[$hash]->getTask();
+        $task?->requestLightLevelUpdate();
+    }
 
-	/** @priority MONITOR */
-	public function onPlayerQuit(PlayerQuitEvent $event) : void{
-		$player = $event->getPlayer();
-		$this->tasks[spl_object_hash($player)]?->cancel();
-		unset($this->tasks[spl_object_hash($player)]);
-	}
+    /** @priority MONITOR */
+    public function onPlayerJoin(PlayerJoinEvent $event) : void{
+        $player = $event->getPlayer();
+        $this->tasks[spl_object_hash($player)] = $this->plugin->getScheduler()->scheduleRepeatingTask(
+            new FlashlightTask($player),
+            $this->updateDelay
+        );
+    }
+
+    /** @priority MONITOR */
+    public function onPlayerQuit(PlayerQuitEvent $event) : void{
+        $player = $event->getPlayer();
+        $this->tasks[spl_object_hash($player)]?->cancel();
+        unset($this->tasks[spl_object_hash($player)]);
+    }
 }

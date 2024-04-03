@@ -12,9 +12,9 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * @author  PresentKim (debe3721@gmail.com)
- * @link    https://github.com/PresentKim
- * @license https://www.gnu.org/licenses/lgpl-3.0 LGPL-3.0 License
+ * @author       PresentKim (debe3721@gmail.com)
+ * @link         https://github.com/PresentKim
+ * @license      https://www.gnu.org/licenses/lgpl-3.0 LGPL-3.0 License
  *
  *   (\ /)
  *  ( . .) ♥
@@ -35,6 +35,7 @@ use pocketmine\item\StringToItemParser;
 use pocketmine\plugin\PluginBase;
 
 final class Main extends PluginBase{
+
     protected function onEnable() : void{
         $this->getServer()->getPluginManager()->registerEvents(new EventListener(
             $this,
@@ -45,7 +46,8 @@ final class Main extends PluginBase{
         if(is_array($itemLightLevels)){
             foreach($itemLightLevels as $itemString => $lightLevel){
                 try{
-                    $item = StringToItemParser::getInstance()->parse($itemString) ?? LegacyStringToItemParser::getInstance()->parse($itemString);
+                    $item = StringToItemParser::getInstance()->parse($itemString) ??
+                        LegacyStringToItemParser::getInstance()->parse($itemString);
                     LightLevelCalculator::setLightLevel($item->getStateId(), max(0, min(15, $lightLevel)));
                 }catch(LegacyStringToItemParserException){
                     $this->getLogger()->error("Error when 'item-light-levels' data read...");

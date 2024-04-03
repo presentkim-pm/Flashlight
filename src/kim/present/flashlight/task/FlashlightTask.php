@@ -42,119 +42,120 @@ use pocketmine\world\Position;
 use function max;
 
 class FlashlightTask extends Task{
-	public const LIGHT_BLOCK = 470;
 
-	private Player $player;
-	private int $lightLevel = 0;
-	private ?Position $pos = null;
+    public const LIGHT_BLOCK = 470;
 
-	private bool $requireLightLevelUpdate = false;
+    private Player $player;
+    private int $lightLevel = 0;
+    private ?Position $pos = null;
 
-	public function __construct(Player $player){
-		$this->player = $player;
-		$this->requestLightLevelUpdate();
+    private bool $requireLightLevelUpdate = false;
 
-		$inventoryListener = CallbackInventoryListener::onAnyChange(fn() => $this->requestLightLevelUpdate());
-		$player->getInventory()->getListeners()->add($inventoryListener);
-		$player->getOffHandInventory()->getListeners()->add($inventoryListener);
-	}
+    public function __construct(Player $player){
+        $this->player = $player;
+        $this->requestLightLevelUpdate();
 
-	public function onRun() : void{
-		//When player was leaved from server, cancle task self.
-		if($this->player->isClosed() || !$this->player->isConnected()){
-			$this->getHandler()?->cancel();
-			return;
-		}
+        $inventoryListener = CallbackInventoryListener::onAnyChange(fn() => $this->requestLightLevelUpdate());
+        $player->getInventory()->getListeners()->add($inventoryListener);
+        $player->getOffHandInventory()->getListeners()->add($inventoryListener);
+    }
 
-		//If light level update required, update the light level according to the player's inventory
-		if($this->requireLightLevelUpdate){
-			$this->setLightLevel(max(
-				LightLevelCalculator::calc($this->player->getInventory()->getItemInHand()),
-				LightLevelCalculator::calc($this->player->getOffHandInventory()->getItem(0))
-			));
-			$this->requireLightLevelUpdate = false;
-		}
+    public function onRun() : void{
+        //When player was leaved from server, cancle task self.
+        if($this->player->isClosed() || !$this->player->isConnected()){
+            $this->getHandler()?->cancel();
+            return;
+        }
 
-		if($this->lightLevel <= 0){
-			return;
-		}
+        //If light level update required, update the light level according to the player's inventory
+        if($this->requireLightLevelUpdate){
+            $this->setLightLevel(max(
+                LightLevelCalculator::calc($this->player->getInventory()->getItemInHand()),
+                LightLevelCalculator::calc($this->player->getOffHandInventory()->getItem(0))
+            ));
+            $this->requireLightLevelUpdate = false;
+        }
 
-		$pos = $this->player->getPosition();
-		$newPos = Position::fromObject($pos->add(0.5, 1, 0.5)->floor(), $pos->getWorld());
-		if($this->pos === null || !$this->pos->equals($newPos)){
-			$this->restoreBlock();
-			$this->pos = $newPos;
-			$this->overrideBlock();
-		}
-	}
+        if($this->lightLevel <= 0){
+            return;
+        }
 
-	public function onCancel() : void{
-		$this->restoreBlock();
-	}
+        $pos = $this->player->getPosition();
+        $newPos = Position::fromObject($pos->add(0.5, 1, 0.5)->floor(), $pos->getWorld());
+        if($this->pos === null || !$this->pos->equals($newPos)){
+            $this->restoreBlock();
+            $this->pos = $newPos;
+            $this->overrideBlock();
+        }
+    }
 
-	/**
-	 * Request to recalculate light level on next 'onRun' call.
-	 * Designed for reduce the overload of calculating light level for each inventory change.
-	 */
-	public function requestLightLevelUpdate() : void{
-		$this->requireLightLevelUpdate = true;
-	}
+    public function onCancel() : void{
+        $this->restoreBlock();
+    }
 
-	public function setLightLevel(int $lightLevel) : void{
-		$lightLevel = max(0, $lightLevel & 0xf - 1);
+    /**
+     * Request to recalculate light level on next 'onRun' call.
+     * Designed for reduce the overload of calculating light level for each inventory change.
+     */
+    public function requestLightLevelUpdate() : void{
+        $this->requireLightLevelUpdate = true;
+    }
 
-		if($this->lightLevel === $lightLevel){
-			return;
-		}
+    public function setLightLevel(int $lightLevel) : void{
+        $lightLevel = max(0, $lightLevel & 0xf - 1);
 
-		$this->lightLevel = $lightLevel;
-		$this->overrideBlock();
-	}
+        if($this->lightLevel === $lightLevel){
+            return;
+        }
 
-	private function restoreBlock() : void{
-		if($this->pos === null){
-			return;
-		}
-		self::sendBlockLayers($this->pos, $this->pos->world->getBlock($this->pos), VanillaBlocks::AIR());
-	}
+        $this->lightLevel = $lightLevel;
+        $this->overrideBlock();
+    }
 
-	private function overrideBlock() : void{
-		if($this->pos === null){
-			return;
-		}
+    private function restoreBlock() : void{
+        if($this->pos === null){
+            return;
+        }
+        self::sendBlockLayers($this->pos, $this->pos->world->getBlock($this->pos), VanillaBlocks::AIR());
+    }
 
-		$normalLayer = $this->pos->world->getBlock($this->pos);
-		$liquidLayer = VanillaBlocks::LIGHT()->setLightLevel($this->lightLevel);
-		if($normalLayer instanceof Liquid){
-			[$normalLayer, $liquidLayer] = [$liquidLayer, $normalLayer];
-		}
+    private function overrideBlock() : void{
+        if($this->pos === null){
+            return;
+        }
 
-		self::sendBlockLayers($this->pos, $normalLayer, $liquidLayer);
-	}
+        $normalLayer = $this->pos->world->getBlock($this->pos);
+        $liquidLayer = VanillaBlocks::LIGHT()->setLightLevel($this->lightLevel);
+        if($normalLayer instanceof Liquid){
+            [$normalLayer, $liquidLayer] = [$liquidLayer, $normalLayer];
+        }
 
-	private static function sendBlockLayers(Position $pos, Block $normalLayer, Block $liquidLayer) : void{
-		$blockTranslator = TypeConverter::getInstance()->getBlockTranslator();
-		$normalLayerId = $blockTranslator->internalIdToNetworkId($normalLayer->getStateId());
-		$liquidLayerId = $blockTranslator->internalIdToNetworkId($liquidLayer->getStateId());
+        self::sendBlockLayers($this->pos, $normalLayer, $liquidLayer);
+    }
 
-		$blockPos = BlockPosition::fromVector3($pos);
-		$pos->world->broadcastPacketToViewers(
-			$pos,
-			UpdateBlockPacket::create(
-				$blockPos,
-				$normalLayerId,
-				UpdateBlockPacket::FLAG_NETWORK,
-				UpdateBlockPacket::DATA_LAYER_NORMAL
-			)
-		);
-		$pos->world->broadcastPacketToViewers(
-			$pos,
-			UpdateBlockPacket::create(
-				$blockPos,
-				$liquidLayerId,
-				UpdateBlockPacket::FLAG_NETWORK,
-				UpdateBlockPacket::DATA_LAYER_LIQUID
-			)
-		);
-	}
+    private static function sendBlockLayers(Position $pos, Block $normalLayer, Block $liquidLayer) : void{
+        $blockTranslator = TypeConverter::getInstance()->getBlockTranslator();
+        $normalLayerId = $blockTranslator->internalIdToNetworkId($normalLayer->getStateId());
+        $liquidLayerId = $blockTranslator->internalIdToNetworkId($liquidLayer->getStateId());
+
+        $blockPos = BlockPosition::fromVector3($pos);
+        $pos->world->broadcastPacketToViewers(
+            $pos,
+            UpdateBlockPacket::create(
+                $blockPos,
+                $normalLayerId,
+                UpdateBlockPacket::FLAG_NETWORK,
+                UpdateBlockPacket::DATA_LAYER_NORMAL
+            )
+        );
+        $pos->world->broadcastPacketToViewers(
+            $pos,
+            UpdateBlockPacket::create(
+                $blockPos,
+                $liquidLayerId,
+                UpdateBlockPacket::FLAG_NETWORK,
+                UpdateBlockPacket::DATA_LAYER_LIQUID
+            )
+        );
+    }
 }

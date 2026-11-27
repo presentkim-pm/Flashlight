@@ -35,21 +35,22 @@ use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\scheduler\TaskHandler;
 
-use function spl_object_hash;
-
 final class EventListener implements Listener{
 
-    /** @var TaskHandler[] */
+    /**
+     * @var TaskHandler[]
+     * @phpstan-var array<string, TaskHandler>
+     */
     private array $tasks = [];
 
     public function __construct(
-        private Main $plugin,
-        private int $updateDelay
+        private readonly Main $plugin,
+        private readonly int $updateDelay
     ){}
 
     /** @priority MONITOR */
     public function onPlayerItemHeld(PlayerItemHeldEvent $event) : void{
-        $hash = spl_object_hash($event->getPlayer());
+        $hash = $event->getPlayer()->getUniqueId()->toString();
         /**
          * I thought it was impossible,
          * but if the PlayerJoinEvent handler given item,
@@ -58,15 +59,16 @@ final class EventListener implements Listener{
         if(!isset($this->tasks[$hash])){
             return;
         }
-        /** @var FlashlightTask|null $task */
         $task = $this->tasks[$hash]->getTask();
-        $task?->requestLightLevelUpdate();
+        if($task instanceof FlashlightTask){
+            $task->requestLightLevelUpdate();
+        }
     }
 
     /** @priority MONITOR */
     public function onPlayerJoin(PlayerJoinEvent $event) : void{
         $player = $event->getPlayer();
-        $this->tasks[spl_object_hash($player)] = $this->plugin->getScheduler()->scheduleRepeatingTask(
+        $this->tasks[$player->getUniqueId()->toString()] = $this->plugin->getScheduler()->scheduleRepeatingTask(
             new FlashlightTask($player),
             $this->updateDelay
         );
@@ -75,7 +77,10 @@ final class EventListener implements Listener{
     /** @priority MONITOR */
     public function onPlayerQuit(PlayerQuitEvent $event) : void{
         $player = $event->getPlayer();
-        $this->tasks[spl_object_hash($player)]?->cancel();
-        unset($this->tasks[spl_object_hash($player)]);
+        $hash = $player->getUniqueId()->toString();
+        if(isset($this->tasks[$hash])){
+            $this->tasks[$hash]->cancel();
+            unset($this->tasks[$hash]);
+        }
     }
 }

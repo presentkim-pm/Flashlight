@@ -29,6 +29,9 @@ namespace kim\present\flashlight\utils;
 
 use pocketmine\item\Item;
 
+use function max;
+use function min;
+
 final class LightLevelCalculator{
 
     /**
@@ -46,6 +49,14 @@ final class LightLevelCalculator{
      */
     public static function setLightLevel(int $stateId, int $lightLevel) : void{
         self::$lightLevelMap[$stateId] = $lightLevel;
+    }
+
+    /**
+     * Converts the light level of an item to the level of the light block placed for it.
+     * The light block is placed at the head of the player, so it is one level weaker than the item itself.
+     */
+    public static function toLightBlockLevel(int $itemLightLevel) : int{
+        return max(0, min(15, $itemLightLevel) - 1);
     }
 
     public static function calc(Item $item) : int{

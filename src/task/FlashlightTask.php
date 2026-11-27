@@ -43,16 +43,12 @@ use function max;
 
 class FlashlightTask extends Task{
 
-    public const LIGHT_BLOCK = 470;
-
-    private Player $player;
     private int $lightLevel = 0;
     private ?Position $pos = null;
 
     private bool $requireLightLevelUpdate = false;
 
-    public function __construct(Player $player){
-        $this->player = $player;
+    public function __construct(private readonly Player $player){
         $this->requestLightLevelUpdate();
 
         $inventoryListener = CallbackInventoryListener::onAnyChange(fn() => $this->requestLightLevelUpdate());
@@ -102,13 +98,19 @@ class FlashlightTask extends Task{
     }
 
     public function setLightLevel(int $lightLevel) : void{
-        $lightLevel = max(0, $lightLevel & 0xf - 1);
+        $lightLevel = LightLevelCalculator::toLightBlockLevel($lightLevel);
 
         if($this->lightLevel === $lightLevel){
             return;
         }
 
         $this->lightLevel = $lightLevel;
+        if($lightLevel <= 0){
+            //No more light source, so remove the light block instead of leaving a dark one behind
+            $this->restoreBlock();
+            $this->pos = null;
+            return;
+        }
         $this->overrideBlock();
     }
 
@@ -116,7 +118,7 @@ class FlashlightTask extends Task{
         if($this->pos === null){
             return;
         }
-        self::sendBlockLayers($this->pos, $this->pos->world->getBlock($this->pos), VanillaBlocks::AIR());
+        self::sendBlockLayers($this->pos, $this->pos->getWorld()->getBlock($this->pos), VanillaBlocks::AIR());
     }
 
     private function overrideBlock() : void{
@@ -124,7 +126,7 @@ class FlashlightTask extends Task{
             return;
         }
 
-        $normalLayer = $this->pos->world->getBlock($this->pos);
+        $normalLayer = $this->pos->getWorld()->getBlock($this->pos);
         $liquidLayer = VanillaBlocks::LIGHT()->setLightLevel($this->lightLevel);
         if($normalLayer instanceof Liquid){
             [$normalLayer, $liquidLayer] = [$liquidLayer, $normalLayer];
@@ -139,7 +141,7 @@ class FlashlightTask extends Task{
         $liquidLayerId = $blockTranslator->internalIdToNetworkId($liquidLayer->getStateId());
 
         $blockPos = BlockPosition::fromVector3($pos);
-        $pos->world->broadcastPacketToViewers(
+        $pos->getWorld()->broadcastPacketToViewers(
             $pos,
             UpdateBlockPacket::create(
                 $blockPos,
@@ -148,7 +150,7 @@ class FlashlightTask extends Task{
                 UpdateBlockPacket::DATA_LAYER_NORMAL
             )
         );
-        $pos->world->broadcastPacketToViewers(
+        $pos->getWorld()->broadcastPacketToViewers(
             $pos,
             UpdateBlockPacket::create(
                 $blockPos,
